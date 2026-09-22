@@ -23,10 +23,18 @@
 ```powershell
 npm install
 npx wrangler login
-npx wrangler secret put GEMINI_API_KEY   # 填 https://aistudio.google.com/apikey 申请的 key
-npx wrangler secret put WORKER_API_KEY   # 可选：客户端调用你的 Worker 时要用的密钥
 npx wrangler deploy
 ```
+
+然后在 Cloudflare 后台填 key（仓库是公开的，不要写进代码）：
+
+```text
+Workers & Pages -> 你的 Worker -> Settings -> Variables and Secrets -> Add
+  GEMINI_API_KEY   # 必填，https://aistudio.google.com/apikey 申请
+  WORKER_API_KEY   # 可选：客户端调用你的 Worker 时要用的密钥
+```
+
+也可以在本地用 `npx wrangler secret put GEMINI_API_KEY` 设置。两种方式都是明文/加密变量，代码里统一用 `env.GEMINI_API_KEY` 读取。
 
 也可以在 Cloudflare Dashboard 的 `Workers & Pages -> 你的 Worker -> Settings -> Variables -> Secrets` 里添加这两个值。
 
@@ -113,9 +121,15 @@ The upstream is Gemini's OpenAI-compatible endpoint, so OpenAI requests are forw
 ```powershell
 npm install
 npx wrangler login
-npx wrangler secret put GEMINI_API_KEY   # from https://aistudio.google.com/apikey
-npx wrangler secret put WORKER_API_KEY   # optional client key
 npx wrangler deploy
+```
+
+Then add the keys in the Cloudflare dashboard (this repository is public, so do not put them in the code):
+
+```text
+Workers & Pages -> your Worker -> Settings -> Variables and Secrets -> Add
+  GEMINI_API_KEY   # required, from https://aistudio.google.com/apikey
+  WORKER_API_KEY   # optional client-facing key
 ```
 
 ### Usage

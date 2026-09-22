@@ -4,14 +4,16 @@ compatibility_date = "2025-11-21"
 
 # This Worker relays Google Gemini API through OpenAI/Anthropic-compatible routes.
 #
-# Required: your Gemini API key (get one at https://aistudio.google.com/apikey):
-#   wrangler secret put GEMINI_API_KEY
+# IMPORTANT: this repository is public. Do NOT write real keys into this file.
+# Add them as plain-text Variables in the Cloudflare dashboard instead:
+#   Workers & Pages -> your Worker -> Settings -> Variables and Secrets -> Add
+#     GEMINI_API_KEY  (required, get one at https://aistudio.google.com/apikey)
+#     WORKER_API_KEY  (optional; if set, clients must send it to call the Worker)
+# Dashboard variables are applied without redeploying from source and never
+# touch this repository. Uncomment below only in a private fork.
 #
-# Optional: protect this Worker with your own client-facing key:
-#   wrangler secret put WORKER_API_KEY
-# When WORKER_API_KEY is set, clients must send it as Authorization: Bearer <key>,
-# x-api-key: <key>, or anthropic-api-key: <key>. If it is not set, the Worker
-# accepts any client key and forwards it upstream as the Gemini key.
+# GEMINI_API_KEY = ""
+# WORKER_API_KEY = ""
 
 [vars]
 UPSTREAM_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai"
