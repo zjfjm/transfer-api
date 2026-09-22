@@ -36,7 +36,7 @@ export default {
 
       // Raw passthrough to the native Gemini API (v1beta), e.g. /api/models.
       if (path.startsWith("/api/")) {
-        return proxyNative(request, env, path);
+        return await proxyNative(request, env, path);
       }
 
       if (path === "/mcp" || path === "/v1/mcp" || path === "/anthropic/mcp" || path === "/anthropic/v1/mcp") {
@@ -52,11 +52,11 @@ export default {
       }
 
       if (path === "/v1/messages" || (path === "/v1/models" && looksLikeAnthropicRequest(request)) || path.startsWith("/anthropic/")) {
-        return handleAnthropic(request, env, path);
+        return await handleAnthropic(request, env, path);
       }
 
       if (path.startsWith("/v1/")) {
-        return handleOpenAI(request, env, path);
+        return await handleOpenAI(request, env, path);
       }
 
       return errorResponse(404, "not_found", `No route for ${path}`);
@@ -601,8 +601,8 @@ async function getModelCatalog(request, env) {
     const models = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : [];
     return models
       .map((model) => ({
-        id: model.id || model.name || String(model),
-        name: model.name || model.id || String(model),
+        id: String(model.id || model.name || model).replace(/^models\//, ""),
+        name: String(model.name || model.id || model).replace(/^models\//, ""),
         provider: model.owned_by || model.provider || "google",
       }))
       .filter((model) => model.id);
@@ -686,7 +686,10 @@ async function proxyNative(request, env, path) {
 
   const headers = new Headers(request.headers);
   const key = optionalUpstreamApiKey(request, env);
-  if (key) headers.set("authorization", `Bearer ${key}`);
+  if (key) {
+    headers.set("authorization", `Bearer ${key}`);
+    headers.set("x-goog-api-key", key);
+  }
   headers.delete("host");
 
   const init = {
@@ -864,6 +867,19 @@ function passthroughResponse(response) {
   return addCors(response);
 }
 
+// Copy an upstream response while dropping hop-by-hop and transport headers.
+// The Workers runtime already decodes gzip/deflate on fetch(), so forwarding the
+// original content-encoding/content-length would make the body disagree with the
+// headers and break the response mid-stream.
+function sanitizedHeaders(src) {
+  const headers = new Headers(src);
+  headers.delete("content-encoding");
+  headers.delete("content-length");
+  headers.delete("transfer-encoding");
+  headers.delete("connection");
+  return headers;
+}
+
 function jsonResponse(data, init = {}) {
   return new Response(JSON.stringify(data, null, 2), {
     ...init,
@@ -902,7 +918,7 @@ function errorResponse(status, code, message) {
 }
 
 function addCors(response) {
-  const headers = new Headers(response.headers);
+  const headers = sanitizedHeaders(response.headers);
   for (const [key, value] of Object.entries(CORS_HEADERS)) headers.set(key, value);
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
@@ -967,9 +983,10 @@ function inputToText(input) {
 function resolveModel(model, env, fallback) {
   const defaultModel = fallback || env.DEFAULT_MODEL || DEFAULT_MODEL;
   if (!model) return defaultModel;
-  // Gemini model ids (and embedding ids) are passed through as-is; anything
-  // else (gpt-*, claude-*, ...) cannot be served by this upstream.
-  if (/^(gemini|text-embedding)/i.test(model)) return model;
+  // Gemini's OpenAI layer reports ids like "models/gemini-2.5-pro"; accept both
+  // spellings. Anything else (gpt-*, claude-*) cannot be served here.
+  const normalized = String(model).replace(/^models\//, "");
+  if (/^(gemini|text-embedding)/i.test(normalized)) return normalized;
   return defaultModel;
 }
 
