@@ -23,8 +23,10 @@
 ```powershell
 npm install
 npx wrangler login
-npx wrangler deploy
+npx wrangler deploy --keep-vars
 ```
+
+> `--keep-vars` 必须带：默认 `wrangler deploy` 会删除不在 wrangler.toml 里定义的环境变量（包括你在后台填的 key）。
 
 然后在 Cloudflare 后台填 key（仓库是公开的，不要写进代码）：
 
@@ -121,7 +123,7 @@ The upstream is Gemini's OpenAI-compatible endpoint, so OpenAI requests are forw
 ```powershell
 npm install
 npx wrangler login
-npx wrangler deploy
+npx wrangler deploy --keep-vars
 ```
 
 Then add the keys in the Cloudflare dashboard (this repository is public, so do not put them in the code):

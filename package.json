@@ -6,7 +6,7 @@
   "scripts": {
     "check": "node --check src/worker.js",
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy --keep-vars"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
